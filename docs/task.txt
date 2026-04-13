@@ -1,0 +1,95 @@
+ТЗ:
+Реализовать 2 таблицы: MortgageProfile и MortgageCalculation (столбцы уже описаны)
+Реализовать API метод для создания ипотечного расчета, который сохраняет данные в таблицы MortgageProfile и MortgageCalculation и отдает объект с информацией об ипотеке и графиком платежей
+Тестовое нужно реализовать в приложенном проекте: server.zip
+Результат тестового должен быть в github
+При выполнении тестового с использованием ИИ - оно будет сразу браковаться без предоставления ОС, т.к. ИИ не справляется с качественным выполнением данного задания
+Предоставить:
+Диаграмму последовательностей в FigJam (как работает логика метода ипотечного расчета в виде блок-схемы)
+Диаграмму зависимостей
+Требования:
+Создание ипотечного расчета должно быть атомарным
+Расчет графика платежей вынести в worker
+Если расчет с идентичными входными параметрами уже был выполнен, то результат должен браться из Redis
+При наличии вопросов и дополнений к заданию писать @KvantumCEO
+Схема БД:
+- MortgageProfile
+    - id: number - PK
+    - userId: uuid - FK ⇒ User
+    - propertyPrice: number
+    - propertyType: string // apartment_in_new_building, apartment_in_secondary_building, house, house_with_land_plot, land_plot, other
+    - downPaymentAmount: number
+    - matCapitalAmount: number | null
+    - matCapitalIncluded: boolean
+    - mortgageTermYears: number
+    - interestRate: number
+
+- MortgageCalculation
+    - id: number - PK
+    - userId: uuid - FK ⇒ User
+    - mortgageProfileId: number - FK ⇒ MortgageProfile
+    - monthlyPayment: number
+    - totalPayment: number
+    - totalOverpaymentAmount: number
+    - possibleTaxDeduction: number
+    - savingsDueMotherCapital: number
+    - recommendedIncome: number
+    - paymentSchedule: text // json type MortgagePaymentSchedule
+
+Схема API:
+- POST: /mortgage-profiles - для создания ипотечного расчета
+    Request: {
+    	propertyPrice: number
+    	propertyType: PropertyType 
+    	downPaymentAmount: number
+    	matCapitalAmount: number | null
+    	matCapitalIncluded: boolean
+    	mortgageTermYears: number
+    	interestRate: number
+    }
+    Response: {
+	id: string
+    }
+- GET: /mortgage-profiles/:id - для получения ипотечного расчета
+    Response: {
+      monthlyPayment: string
+      totalPayment: string
+      totalOverpaymentAmount: string
+      possibleTaxDeduction: string
+      savingsDueMotherCapital: string
+      recommendedIncome: string
+    	mortgagePaymentSchedule: MortgagePaymentSchedule
+    }
+    
+- Types
+    PropertyType: apartment_in_new_building, apartment_in_secondary_building, house, house_with_land_plot, land_plot, other
+    
+    MortgagePaymentSchedule = {
+    	[year: string]: MonthlyPayments;
+    };
+    
+    MonthlyMortgagePayments = {
+    [month: string]: MortgagePayment;
+    };
+    
+    MortgagePayment = {
+    	totalPayment: number;
+    	repaymentOfMortgageBody: number;
+    	repaymentOfMortgageInterest: number;
+    	mortgageBalance: number;
+    };
+
+Формулы ипотечного расчета:
+   1. Сумма кредита: стоимость недвижимости - первоначальный взнос - мат.капитал
+    2. Общее количество месяцев: срок ипотеки (в годах) * 12
+    3. Месячная процентная ставка: годовая процентная ставка / 12 / 100
+    4. Ежемесячный платеж: сумма кредита * месячная процентная ставка * (1 + месячная процентная ставка)^общее количество месяцев / ((1 + месячная процентная ставка)^общее количество месяцев - 1)
+    5. Общая сумма выплат: ежемесячный платеж * общее количество месяцев
+    6. Переплата по кредиту: общая сумма выплат - сумма кредита
+    7. Налоговый вычет: за покупку жилья + за уплаченные проценты
+        1. За покупку жилья: меньшее из стоимость недвижимости или 2.000.000 * 0.13 (максимум 260.000)
+        2. За уплаченные проценты: меньшее из переплаты по кредиту или 3.000.000 * 0.13 (максимум 390.000)
+    8. График платежей:
+        1. Проценты за месяц: остаток долга на начало месяца ∗ месячная ставка
+        2. Основной долг за месяц: ежемесячный платеж − проценты за месяц
+        3. Остаток долга на конец месяца: остаток долга на начало месяца − основной долг за месяц

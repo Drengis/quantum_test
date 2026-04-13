@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS mortgage_calculations;
