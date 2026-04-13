@@ -28,7 +28,7 @@ type MortgageCalculation struct {
 	PossibleTaxDeduction    decimal.Decimal   `json:"possible_tax_deduction" gorm:"type:numeric"`
 	SavingsDueMotherCapital decimal.Decimal   `json:"savings_due_mother_capital" gorm:"type:numeric"`
 	RecommendedIncome       decimal.Decimal   `json:"recommended_income" gorm:"type:numeric;not null"`
-	PaymentSchedule         json.RawMessage   `json:"payment_schedule" gorm:"type:jsonb;not null"`
+	PaymentSchedule         *json.RawMessage  `json:"payment_schedule" gorm:"type:jsonb"`
 	CreatedAt               time.Time         `json:"created_at" gorm:"not null;autoCreateTime"`
 	UpdatedAt               time.Time         `json:"updated_at" gorm:"not null;autoUpdateTime"`
 }

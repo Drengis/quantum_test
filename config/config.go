@@ -16,11 +16,18 @@ type DBConfig struct {
 	Name     string
 }
 
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+}
+
 type Config struct {
 	AppKey      string
 	AppURL      string
 	MainAppPort string
 	DB          DBConfig
+	Redis       RedisConfig
 }
 
 func LoadConfig() Config {
@@ -34,6 +41,7 @@ func LoadConfig() Config {
 		AppURL:      getEnv("APP_URL", "http://localhost"),
 		MainAppPort: getEnv("MAIN_APP_PORT", "8081"),
 		DB:          loadDBConfig(),
+		Redis:       loadRedisConfig(),
 	}
 }
 
@@ -45,6 +53,14 @@ func loadDBConfig() DBConfig {
 		User:     getEnv("DB_USER", "quantum"),
 		Password: getEnv("DB_PASSWORD", "quantum"),
 		Name:     getEnv("DB_DATABASE", "quantum"),
+	}
+}
+
+func loadRedisConfig() RedisConfig {
+	return RedisConfig{
+		Host:     getEnv("REDIS_HOST", "localhost"),
+		Port:     getEnv("REDIS_PORT", "6379"),
+		Password: getEnv("REDIS_PASSWORD", ""),
 	}
 }
 

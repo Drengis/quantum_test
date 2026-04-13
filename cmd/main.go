@@ -7,6 +7,7 @@ import (
 	"github.com/user/quantum-server/config"
 	db "github.com/user/quantum-server/internal/database"
 	"github.com/user/quantum-server/internal/dto"
+	"github.com/user/quantum-server/internal/handler"
 	"github.com/user/quantum-server/internal/repository"
 	"github.com/user/quantum-server/internal/service"
 	"github.com/user/quantum-server/internal/worker"
@@ -15,6 +16,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 	dbConn := db.Init(cfg.DB)
+	rdb := db.InitRedis(cfg.Redis)
 
 	profileRepo := repository.NewMortgageProfileRepository(dbConn)
 	calcRepo := repository.NewMortgageCalculationRepository(dbConn)
@@ -23,11 +25,14 @@ func main() {
 	taskChan := make(chan dto.MortgageTask, 100)
 
 	// Service
-	mortgageService := service.NewMortgageService(dbConn, profileRepo, calcRepo, taskChan)
+	mortgageService := service.NewMortgageService(dbConn, profileRepo, calcRepo, rdb, taskChan)
 
 	// Worker
 	calcWorker := worker.NewCalculationWorker(mortgageService, calcRepo, taskChan)
 	calcWorker.Start(context.Background())
+
+	// Handlers
+	mortgageHandler := handler.NewMortgageHandler(mortgageService)
 
 	r := gin.Default()
 
@@ -45,5 +50,9 @@ func main() {
 		c.Next()
 	})
 
-	r.Run(cfg.AppURL + ":" + cfg.MainAppPort)
+	// Routes
+	r.POST("/mortgage-profiles", mortgageHandler.Create)
+	r.GET("/mortgage-profiles/:id", mortgageHandler.Get)
+
+	r.Run(":" + cfg.MainAppPort)
 }

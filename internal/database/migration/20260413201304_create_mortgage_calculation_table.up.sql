@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS mortgage_calculations (
     possible_tax_deduction NUMERIC,
     savings_due_mother_capital NUMERIC,
     recommended_income NUMERIC NOT NULL,
-    payment_schedule JSONB NOT NULL,
+    payment_schedule JSONB,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

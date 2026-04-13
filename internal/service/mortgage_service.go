@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
 	"github.com/user/quantum-server/internal/domain"
 	"github.com/user/quantum-server/internal/dto"
@@ -23,19 +25,30 @@ type mortgageService struct {
 	db          *sql.DB
 	profileRepo repository.MortgageProfileRepository
 	calcRepo    repository.MortgageCalculationRepository
+	rdb         *redis.Client
 	taskChan    chan<- dto.MortgageTask
 }
 
-func NewMortgageService(db *sql.DB, profileRepo repository.MortgageProfileRepository, calcRepo repository.MortgageCalculationRepository, taskChan chan<- dto.MortgageTask) MortgageService {
+func NewMortgageService(db *sql.DB, profileRepo repository.MortgageProfileRepository, calcRepo repository.MortgageCalculationRepository, rdb *redis.Client, taskChan chan<- dto.MortgageTask) MortgageService {
 	return &mortgageService{
 		db:          db,
 		profileRepo: profileRepo,
 		calcRepo:    calcRepo,
+		rdb:         rdb,
 		taskChan:    taskChan,
 	}
 }
 
 func (s *mortgageService) CreateCalculation(ctx context.Context, input dto.CreateMortgageRequest) (*domain.MortgageCalculation, error) {
+	// Пробуем найти в кэше
+	cacheKey := s.generateCacheKey(input)
+	if s.rdb != nil {
+		cachedData, err := s.rdb.Get(ctx, cacheKey).Bytes()
+		if err == nil {
+			return s.createFromCache(ctx, input, cachedData)
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -108,9 +121,85 @@ func (s *mortgageService) ProcessCalculation(ctx context.Context, id int, input 
 	calc.PossibleTaxDeduction = calcResult.TaxDeduction
 	calc.SavingsDueMotherCapital = calcResult.SavingsMotherCapital
 	calc.RecommendedIncome = calcResult.RecommendedIncome
-	calc.PaymentSchedule = scheduleJSON
+	rawMsg := json.RawMessage(scheduleJSON)
+	calc.PaymentSchedule = &rawMsg
 
-	return s.calcRepo.Update(ctx, calc)
+	err = s.calcRepo.Update(ctx, calc)
+	if err == nil && s.rdb != nil {
+		cacheKey := s.generateCacheKey(input)
+		data, _ := json.Marshal(calcResult)
+		s.rdb.Set(ctx, cacheKey, data, 24*time.Hour)
+		return fmt.Errorf("failed to update calculation: %w", err)
+	}
+	return err
+}
+
+func (s *mortgageService) generateCacheKey(input dto.CreateMortgageRequest) string {
+	str := fmt.Sprintf("%s:%s:%s:%d:%s",
+		input.PropertyPrice.String(),
+		input.PropertyType,
+		input.DownPaymentAmount.String(),
+		input.MortgageTermYears,
+		input.InterestRate.String(),
+	)
+	hash := sha256.Sum256([]byte(str))
+	return fmt.Sprintf("mortgage_cache:%x", hash)
+}
+
+func (s *mortgageService) createFromCache(ctx context.Context, input dto.CreateMortgageRequest, cachedData []byte) (*domain.MortgageCalculation, error) {
+	var calcResult internalCalcResult
+	if err := json.Unmarshal(cachedData, &calcResult); err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	matCap := decimal.Zero
+	if input.MatCapitalAmount != nil {
+		matCap = *input.MatCapitalAmount
+	}
+	profile := &domain.MortgageProfile{
+		UserID:             input.UserID,
+		PropertyPrice:      input.PropertyPrice,
+		PropertyType:       input.PropertyType,
+		DownPaymentAmount:  input.DownPaymentAmount,
+		MatCapitalAmount:   matCap,
+		MatCapitalIncluded: input.MatCapitalIncluded,
+		MortgageTermYears:  input.MortgageTermYears,
+		InterestRate:       input.InterestRate,
+	}
+	if err := s.profileRepo.Create(ctx, tx, profile); err != nil {
+		return nil, err
+	}
+
+	scheduleJSON, _ := json.Marshal(calcResult.Schedule)
+	rawMsg := json.RawMessage(scheduleJSON)
+	calculation := &domain.MortgageCalculation{
+		UserID:                  input.UserID,
+		MortgageProfileID:       profile.ID,
+		Status:                  domain.StatusCompleted,
+		MonthlyPayment:          calcResult.MonthlyPayment,
+		TotalPayment:            calcResult.TotalPayment,
+		TotalOverpaymentAmount:  calcResult.TotalOverpayment,
+		PossibleTaxDeduction:    calcResult.TaxDeduction,
+		SavingsDueMotherCapital: calcResult.SavingsMotherCapital,
+		RecommendedIncome:       calcResult.RecommendedIncome,
+		PaymentSchedule:         &rawMsg,
+	}
+
+	if err := s.calcRepo.Create(ctx, tx, calculation); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return calculation, nil
 }
 
 func (s *mortgageService) GetCalculation(ctx context.Context, id int) (*dto.MortgageResponse, error) {
@@ -123,7 +212,9 @@ func (s *mortgageService) GetCalculation(ctx context.Context, id int) (*dto.Mort
 	}
 
 	var schedule dto.MortgagePaymentSchedule
-	json.Unmarshal(calc.PaymentSchedule, &schedule)
+	if calc.PaymentSchedule != nil {
+		json.Unmarshal(*calc.PaymentSchedule, &schedule)
+	}
 
 	return &dto.MortgageResponse{
 		ID:                      fmt.Sprintf("%d", calc.ID),
