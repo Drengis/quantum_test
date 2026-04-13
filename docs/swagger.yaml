@@ -1,0 +1,154 @@
+definitions:
+  github_com_user_quantum-server_internal_domain.PropertyType:
+    enum:
+    - apartment_in_new_building
+    - apartment_in_secondary_building
+    - house
+    - house_with_land_plot
+    - land_plot
+    - other
+    type: string
+    x-enum-varnames:
+    - PropertyTypeApartmentNew
+    - PropertyTypeApartmentSecondary
+    - PropertyTypeHouse
+    - PropertyTypeHouseLand
+    - PropertyTypeLand
+    - PropertyTypeOther
+  github_com_user_quantum-server_internal_dto.CreateMortgageRequest:
+    properties:
+      downPaymentAmount:
+        type: number
+      interestRate:
+        type: number
+      matCapitalAmount:
+        type: number
+      matCapitalIncluded:
+        type: boolean
+      mortgageTermYears:
+        type: integer
+      propertyPrice:
+        type: number
+      propertyType:
+        $ref: '#/definitions/github_com_user_quantum-server_internal_domain.PropertyType'
+      user_id:
+        type: string
+    type: object
+  github_com_user_quantum-server_internal_dto.MortgagePayment:
+    properties:
+      mortgageBalance:
+        type: number
+      repaymentOfMortgageBody:
+        type: number
+      repaymentOfMortgageInterest:
+        type: number
+      totalPayment:
+        type: number
+    type: object
+  github_com_user_quantum-server_internal_dto.MortgagePaymentSchedule:
+    additionalProperties:
+      additionalProperties:
+        $ref: '#/definitions/github_com_user_quantum-server_internal_dto.MortgagePayment'
+      type: object
+    type: object
+  github_com_user_quantum-server_internal_dto.MortgageResponse:
+    properties:
+      errorMessage:
+        type: string
+      id:
+        type: string
+      monthlyPayment:
+        type: string
+      mortgagePaymentSchedule:
+        $ref: '#/definitions/github_com_user_quantum-server_internal_dto.MortgagePaymentSchedule'
+      possibleTaxDeduction:
+        type: string
+      recommendedIncome:
+        type: string
+      savingsDueMotherCapital:
+        type: string
+      status:
+        type: string
+      totalOverpaymentAmount:
+        type: string
+      totalPayment:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /mortgage-profiles:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новый расчёт ипотеки и возвращает ID задачи
+      parameters:
+      - description: Параметры ипотеки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_user_quantum-server_internal_dto.CreateMortgageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создать ипотечный профиль
+      tags:
+      - Mortgage
+  /mortgage-profiles/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает расчёт ипотеки по ID
+      parameters:
+      - description: ID расчёта
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_user_quantum-server_internal_dto.MortgageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить расчёт ипотеки
+      tags:
+      - Mortgage
+swagger: "2.0"

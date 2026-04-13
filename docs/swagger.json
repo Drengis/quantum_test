@@ -1,0 +1,231 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/mortgage-profiles": {
+            "post": {
+                "description": "Создаёт новый расчёт ипотеки и возвращает ID задачи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mortgage"
+                ],
+                "summary": "Создать ипотечный профиль",
+                "parameters": [
+                    {
+                        "description": "Параметры ипотеки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_user_quantum-server_internal_dto.CreateMortgageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mortgage-profiles/{id}": {
+            "get": {
+                "description": "Возвращает расчёт ипотеки по ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mortgage"
+                ],
+                "summary": "Получить расчёт ипотеки",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID расчёта",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_user_quantum-server_internal_dto.MortgageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_user_quantum-server_internal_domain.PropertyType": {
+            "type": "string",
+            "enum": [
+                "apartment_in_new_building",
+                "apartment_in_secondary_building",
+                "house",
+                "house_with_land_plot",
+                "land_plot",
+                "other"
+            ],
+            "x-enum-varnames": [
+                "PropertyTypeApartmentNew",
+                "PropertyTypeApartmentSecondary",
+                "PropertyTypeHouse",
+                "PropertyTypeHouseLand",
+                "PropertyTypeLand",
+                "PropertyTypeOther"
+            ]
+        },
+        "github_com_user_quantum-server_internal_dto.CreateMortgageRequest": {
+            "type": "object",
+            "properties": {
+                "downPaymentAmount": {
+                    "type": "number"
+                },
+                "interestRate": {
+                    "type": "number"
+                },
+                "matCapitalAmount": {
+                    "type": "number"
+                },
+                "matCapitalIncluded": {
+                    "type": "boolean"
+                },
+                "mortgageTermYears": {
+                    "type": "integer"
+                },
+                "propertyPrice": {
+                    "type": "number"
+                },
+                "propertyType": {
+                    "$ref": "#/definitions/github_com_user_quantum-server_internal_domain.PropertyType"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_user_quantum-server_internal_dto.MortgagePayment": {
+            "type": "object",
+            "properties": {
+                "mortgageBalance": {
+                    "type": "number"
+                },
+                "repaymentOfMortgageBody": {
+                    "type": "number"
+                },
+                "repaymentOfMortgageInterest": {
+                    "type": "number"
+                },
+                "totalPayment": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_user_quantum-server_internal_dto.MortgagePaymentSchedule": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                    "$ref": "#/definitions/github_com_user_quantum-server_internal_dto.MortgagePayment"
+                }
+            }
+        },
+        "github_com_user_quantum-server_internal_dto.MortgageResponse": {
+            "type": "object",
+            "properties": {
+                "errorMessage": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "monthlyPayment": {
+                    "type": "string"
+                },
+                "mortgagePaymentSchedule": {
+                    "$ref": "#/definitions/github_com_user_quantum-server_internal_dto.MortgagePaymentSchedule"
+                },
+                "possibleTaxDeduction": {
+                    "type": "string"
+                },
+                "recommendedIncome": {
+                    "type": "string"
+                },
+                "savingsDueMotherCapital": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "totalOverpaymentAmount": {
+                    "type": "string"
+                },
+                "totalPayment": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

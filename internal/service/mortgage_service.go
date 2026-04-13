@@ -129,7 +129,6 @@ func (s *mortgageService) ProcessCalculation(ctx context.Context, id int, input 
 		cacheKey := s.generateCacheKey(input)
 		data, _ := json.Marshal(calcResult)
 		s.rdb.Set(ctx, cacheKey, data, 24*time.Hour)
-		return fmt.Errorf("failed to update calculation: %w", err)
 	}
 	return err
 }

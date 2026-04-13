@@ -19,6 +19,7 @@ WORKDIR /app
 
 COPY --from=builder /app/.env .
 COPY --from=builder /app/quantum-server .
+COPY --from=builder /app/docs ./docs
 
 EXPOSE 8081
 

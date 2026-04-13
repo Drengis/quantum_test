@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"github.com/user/quantum-server/config"
 	db "github.com/user/quantum-server/internal/database"
 	"github.com/user/quantum-server/internal/dto"
@@ -11,8 +14,15 @@ import (
 	"github.com/user/quantum-server/internal/repository"
 	"github.com/user/quantum-server/internal/service"
 	"github.com/user/quantum-server/internal/worker"
+
+	_ "github.com/user/quantum-server/docs"
 )
 
+// @title Quantum Mortgage API
+// @version 1.0
+// @description API для расчёта ипотечных профилей
+// @host localhost:8081
+// @BasePath /
 func main() {
 	cfg := config.LoadConfig()
 	dbConn := db.Init(cfg.DB)
@@ -21,22 +31,17 @@ func main() {
 	profileRepo := repository.NewMortgageProfileRepository(dbConn)
 	calcRepo := repository.NewMortgageCalculationRepository(dbConn)
 
-	// Channel
 	taskChan := make(chan dto.MortgageTask, 100)
 
-	// Service
 	mortgageService := service.NewMortgageService(dbConn, profileRepo, calcRepo, rdb, taskChan)
 
-	// Worker
 	calcWorker := worker.NewCalculationWorker(mortgageService, calcRepo, taskChan)
 	calcWorker.Start(context.Background())
 
-	// Handlers
 	mortgageHandler := handler.NewMortgageHandler(mortgageService)
 
 	r := gin.Default()
 
-	// CORS
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -50,9 +55,13 @@ func main() {
 		c.Next()
 	})
 
-	// Routes
 	r.POST("/mortgage-profiles", mortgageHandler.Create)
 	r.GET("/mortgage-profiles/:id", mortgageHandler.Get)
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/swagger/index.html")
+	})
 
 	r.Run(":" + cfg.MainAppPort)
 }
