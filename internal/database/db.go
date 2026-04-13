@@ -11,7 +11,7 @@ import (
 
 var DB *sql.DB
 
-func Init(cfg config.DBConfig) {
+func Init(cfg config.DBConfig) *sql.DB {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host,
 		cfg.Port,
@@ -36,4 +36,5 @@ func Init(cfg config.DBConfig) {
 	}
 
 	fmt.Printf("Connected to %s database successfully\n", cfg.Name)
+	return DB
 }

@@ -1,0 +1,3 @@
+ALTER TABLE mortgage_calculations 
+ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'pending',
+ADD COLUMN IF NOT EXISTS error_message TEXT;

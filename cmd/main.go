@@ -1,14 +1,33 @@
 package main
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"github.com/user/quantum-server/config"
 	db "github.com/user/quantum-server/internal/database"
+	"github.com/user/quantum-server/internal/dto"
+	"github.com/user/quantum-server/internal/repository"
+	"github.com/user/quantum-server/internal/service"
+	"github.com/user/quantum-server/internal/worker"
 )
 
 func main() {
 	cfg := config.LoadConfig()
-	db.Init(cfg.DB)
+	dbConn := db.Init(cfg.DB)
+
+	profileRepo := repository.NewMortgageProfileRepository(dbConn)
+	calcRepo := repository.NewMortgageCalculationRepository(dbConn)
+
+	// Channel
+	taskChan := make(chan dto.MortgageTask, 100)
+
+	// Service
+	mortgageService := service.NewMortgageService(dbConn, profileRepo, calcRepo, taskChan)
+
+	// Worker
+	calcWorker := worker.NewCalculationWorker(mortgageService, calcRepo, taskChan)
+	calcWorker.Start(context.Background())
 
 	r := gin.Default()
 
