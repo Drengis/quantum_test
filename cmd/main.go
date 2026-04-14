@@ -30,15 +30,18 @@ func main() {
 
 	profileRepo := repository.NewMortgageProfileRepository(dbConn)
 	calcRepo := repository.NewMortgageCalculationRepository(dbConn)
+	userRepo := repository.NewUserRepository(dbConn)
 
 	taskChan := make(chan dto.MortgageTask, 100)
 
 	mortgageService := service.NewMortgageService(dbConn, profileRepo, calcRepo, rdb, taskChan)
+	userService := service.NewUserService(userRepo)
 
 	calcWorker := worker.NewCalculationWorker(mortgageService, calcRepo, taskChan)
 	calcWorker.Start(context.Background())
 
 	mortgageHandler := handler.NewMortgageHandler(mortgageService)
+	userHandler := handler.NewUserHandler(userService)
 
 	r := gin.Default()
 
@@ -57,6 +60,8 @@ func main() {
 
 	r.POST("/mortgage-profiles", mortgageHandler.Create)
 	r.GET("/mortgage-profiles/:id", mortgageHandler.Get)
+
+	r.POST("/user", userHandler.FindOrCreate)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/", func(c *gin.Context) {

@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   github_com_user_quantum-server_internal_domain.PropertyType:
     enum:
@@ -15,6 +16,29 @@ definitions:
     - PropertyTypeHouseLand
     - PropertyTypeLand
     - PropertyTypeOther
+  github_com_user_quantum-server_internal_domain.User:
+    properties:
+      created_at:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      invited_by:
+        type: string
+      is_active:
+        type: boolean
+      lang_code:
+        type: string
+      last_name:
+        type: string
+      tg_id:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
   github_com_user_quantum-server_internal_dto.CreateMortgageRequest:
     properties:
       downPaymentAmount:
@@ -32,6 +56,21 @@ definitions:
       propertyType:
         $ref: '#/definitions/github_com_user_quantum-server_internal_domain.PropertyType'
       user_id:
+        type: string
+    type: object
+  github_com_user_quantum-server_internal_dto.CreateUserRequest:
+    properties:
+      first_name:
+        type: string
+      invited_by:
+        type: string
+      lang_code:
+        type: string
+      last_name:
+        type: string
+      tg_id:
+        type: string
+      username:
         type: string
     type: object
   github_com_user_quantum-server_internal_dto.MortgagePayment:
@@ -74,8 +113,12 @@ definitions:
       totalPayment:
         type: string
     type: object
+host: localhost:8081
 info:
   contact: {}
+  description: API для расчёта ипотечных профилей
+  title: Quantum Mortgage API
+  version: "1.0"
 paths:
   /mortgage-profiles:
     post:
@@ -151,4 +194,36 @@ paths:
       summary: Получить расчёт ипотеки
       tags:
       - Mortgage
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: FindOrCreate user
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_user_quantum-server_internal_dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_user_quantum-server_internal_domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: FindOrCreate user
+      tags:
+      - users
 swagger: "2.0"
