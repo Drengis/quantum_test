@@ -35,11 +35,11 @@ func (s *userService) FindOrCreate(userDto dto.CreateUserRequest) (*domain.User,
 
 	newUser := &domain.User{
 		TgID:      userDto.TgID,
-		Username:  getStringValue(userDto.Username),
+		Username:  userDto.Username,
 		FirstName: getStringValue(userDto.FirstName),
-		LastName:  getStringValue(userDto.LastName),
-		LangCode:  getStringValue(userDto.LangCode),
-		InvitedBy: getStringValue(userDto.InvitedBy),
+		LastName:  userDto.LastName,
+		LangCode:  userDto.LangCode,
+		InvitedBy: userDto.InvitedBy,
 		IsActive:  true,
 	}
 

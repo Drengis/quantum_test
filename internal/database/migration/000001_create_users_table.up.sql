@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tg_id VARCHAR(255) NOT NULL UNIQUE,
-    username VARCHAR(255) NOT NULL,
+    username VARCHAR(255) ,
     first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    lang_code VARCHAR(10) NOT NULL,
+    last_name VARCHAR(255),
+    lang_code VARCHAR(10),
     invited_by VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -19,3 +19,11 @@ export interface CreateUserRequest {
   lang_code?: string;
   invited_by?: string;
 }
+
+export type TelegramUser = {
+  tg_id?: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  language_code?: string;
+};
