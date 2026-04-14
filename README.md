@@ -1,41 +1,27 @@
-# Quantum Server
+# Quantum
 
-API для расчёта ипотечных профилей.
+Telegram Mini App для расчёта ипотеки.
 
-## Описание
+## Архитектура
 
-Go-сервис для расчёта ипотеки с использованием:
-
-- **Go** (Gin framework)
-- **PostgreSQL** - хранение данных
-- **Redis** - кэширование
-- **Docker** - контейнеризация
-
-## Функционал
-
-- Создание ипотечного профиля (POST /mortgage-profiles)
-- Получение расчёта по ID (GET /mortgage-profiles/:id)
-- Асинхронная обработка расчётов через воркер
-
-## Требования
-
-- Docker
-- Docker Compose
+| Сервис | Технологии | Порт |
+|--------|------------|------|
+| Frontend | Next.js, TypeScript, Effector, TailwindCSS | 3000 |
+| Backend | Go, Gin | 8081 |
+| PostgreSQL | postgres:15-alpine | 5432 |
+| Redis | redis:7-alpine | 6380 |
 
 ## Запуск
 
 ```bash
-# Создать .env из .env.example (если нет)
-cp .env.example .env
-
-# Собрать и запустить
-docker-compose up --build
+docker compose up -d --build
 ```
 
 ## Доступ
 
+- **TMA:** <http://localhost:3000>
 - **API:** <http://localhost:8081>
-- **Swagger UI:** <http://localhost:8081/swagger>
+- **Swagger:** <http://localhost:8081/swagger>
 
 ## Эндпоинты
 
@@ -61,13 +47,13 @@ docker-compose up --build
 
 ## Переменные окружения
 
-| Переменная    | По умолчанию |
-|---------------|--------------|
-| MAIN_APP_PORT | 8081         |
-| DB_HOST       | localhost    |
-| DB_PORT       | 5432         |
-| DB_USER       | quantum      |
-| DB_PASSWORD   | quantum      |
-| DB_DATABASE   | quantum      |
-| REDIS_HOST    | localhost    |
-| REDIS_PORT    | 6379         |
+| Переменная | По умолчанию |
+|-------------|---------------|
+| MAIN_APP_PORT | 8081 |
+| DB_HOST | postgres |
+| DB_PORT | 5432 |
+| DB_USER | quantum |
+| DB_PASSWORD | quantum |
+| DB_DATABASE | quantum |
+| REDIS_HOST | redis |
+| REDIS_PORT | 6379 |

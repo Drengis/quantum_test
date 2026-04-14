@@ -1,6 +1,4 @@
-FROM golang:1.26-alpine AS builder
-
-RUN apk add --no-cache gcc musl-dev
+FROM golang:1.26-bookworm AS builder
 
 WORKDIR /app
 
@@ -9,11 +7,9 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o /app/quantum-server ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/quantum-server ./cmd/main.go
 
-FROM alpine:3.19
-
-RUN apk add --no-cache ca-certificates
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
