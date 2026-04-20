@@ -2,32 +2,7 @@ import { createStore, createEvent, createEffect, sample } from 'effector';
 import { api } from '@/shared/api';
 import { validateForm, ValidationErrors } from './validation';
 
-export interface FormData {
-    propertyType: string;
-    propertyPrice: number;
-    downPaymentAmount: number;
-    mortgageTermYears: number;
-    interestRate: number;
-    matCapitalIncluded: boolean;
-    matCapitalAmount: number;
-}
-
-export interface MortgageResult {
-    id: string;
-    status: string;
-    monthlyPayment: string;
-    totalPayment: string;
-    totalOverpaymentAmount: string;
-    possibleTaxDeduction: string;
-    savingsDueMotherCapital: string;
-    recommendedIncome: string;
-    mortgagePaymentSchedule?: Record<string, Record<string, {
-        totalPayment: string;
-        repaymentOfMortgageBody: string;
-        repaymentOfMortgageInterest: string;
-        mortgageBalance: string;
-    }>>;
-}
+import { MortgageProfile as FormData, MortgageResult } from '@/entities/mortgage/model/types';
 
 const initialState: FormData = {
     propertyType: 'apartment_in_new_building',
